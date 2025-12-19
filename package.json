@@ -2,11 +2,12 @@
   "name": "nodejs-courses",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "dev": "nodemon ./src/index.js",
-    "start": "node ./src/index.js"
+    "dev": "tsx watch ./src/index.ts",
+    "build": "tsc",
+    "start": "tsx ./dist/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,6 +16,8 @@
     "mathjs": "^15.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }
