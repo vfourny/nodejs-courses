@@ -1,44 +1,43 @@
-import {Router} from 'express'
-import Database from 'better-sqlite3'
+import {Request, Response, Router} from 'express'
+import prisma from './client' // Import du client singleton
 
 export const userRouter = Router()
 
-const db = new Database('./database.db')
-
 // GET: Récupérer tous les utilisateurs
 // Accessible via GET /users
-userRouter.get('/', (_req, res) => {
-    const users = db.prepare('SELECT * FROM users').all()
-    res.json(users)
+userRouter.get('/', async (_req: Request, res: Response) => {
+    const users = await prisma.user.findMany()
+    res.status(200).json(users)
 })
 
 // GET: Récupérer un utilisateur par ID
 // Accessible via GET /users/:id
-userRouter.get('/:id', (req, res) => {
+userRouter.get('/:id', async (req: Request, res: Response) => {
     const {id} = req.params
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id)
+    const user = await prisma.user.findUnique({
+        where: {id: parseInt(id)},
+    })
 
     if (!user) {
         return res.status(404).json({error: 'Utilisateur non trouvé'})
     }
 
-    res.json(user)
+    res.status(200).json(user)
 })
 
 // POST: Créer un utilisateur
 // Accessible via POST /users
-userRouter.post('/', (req, res) => {
+userRouter.post('/', async (req: Request, res: Response) => {
     const {name, email} = req.body
 
     try {
-        const result = db
-            .prepare('INSERT INTO users (name, email) VALUES (?, ?)')
-            .run(name, email)
+        const user = await prisma.user.create({
+            data: {name, email},
+        })
+
         res.status(201).json({
             message: 'Utilisateur créé',
-            id: result.lastInsertRowid,
-            name,
-            email,
+            ...user,
         })
     } catch (error: any) {
         res.status(400).json({error: error.message})

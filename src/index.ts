@@ -1,33 +1,9 @@
 import express from 'express'
 import {userRouter} from './user.route'
-import Database from "better-sqlite3";
 
 export const app = express()
 
 const port = 3000
-
-const db = new Database('./database.db')
-
-// Création d'une table utilisateurs
-db.exec(`
-    CREATE TABLE IF NOT EXISTS users
-    (
-        id
-        INTEGER
-        PRIMARY
-        KEY
-        AUTOINCREMENT,
-        name
-        TEXT
-        NOT
-        NULL,
-        email
-        TEXT
-        UNIQUE
-        NOT
-        NULL
-    )
-`)
 
 // Middleware pour parser le JSON
 app.use(express.json())

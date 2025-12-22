@@ -7,11 +7,19 @@
   "scripts": {
     "dev": "tsx watch ./src/index.ts",
     "build": "tsc",
-    "start": "tsx ./dist/index.js"
+    "start": "tsx ./dist/index.js",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push",
+    "db:reset": "prisma migrate reset",
+    "db:setup": "prisma generate && prisma migrate dev && prisma db seed"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@types/express": "^5.0.6",
     "better-sqlite3": "^12.5.0",
