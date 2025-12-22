@@ -1,5 +1,7 @@
+import 'dotenv/config'
 import express from 'express'
-import {userRouter} from './user.route'
+import {userRouter} from "@/user/user.route";
+import {authRouter} from "@/auth/auth.route";
 
 export const app = express()
 
@@ -16,6 +18,7 @@ app.get('/', (_req, res) => {
 // Utilisation du router utilisateur
 // Toutes les routes définies dans userRouter seront préfixées par /users
 app.use('/users', userRouter)
+app.use('/auth', authRouter)
 
 // Démarrage du serveur
 app.listen(port, () => {

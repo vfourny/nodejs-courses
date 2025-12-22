@@ -1,7 +1,10 @@
 import {Request, Response, Router} from 'express'
-import prisma from './client' // Import du client singleton
+import bcrypt from 'bcrypt'
+import prisma from "@/client";
+import {authenticateToken} from "@/auth/auth.middleware";
 
 export const userRouter = Router()
+
 
 // GET: Récupérer tous les utilisateurs
 // Accessible via GET /users
@@ -25,19 +28,26 @@ userRouter.get('/:id', async (req: Request, res: Response) => {
     res.status(200).json(user)
 })
 
-// POST: Créer un utilisateur
+// Route protégée : seuls les utilisateurs authentifiés peuvent créer un utilisateur
 // Accessible via POST /users
-userRouter.post('/', async (req: Request, res: Response) => {
-    const {name, email} = req.body
+userRouter.post('/', authenticateToken, async (req: Request, res: Response) => {
+    const {name, email, password} = req.body
 
     try {
+        const hashedPassword = await bcrypt.hash(password, 10)
+
         const user = await prisma.user.create({
-            data: {name, email},
+            data: {name, email, password: hashedPassword},
+            select: {
+                id: true,
+                name: true,
+                email: true,
+            },
         })
 
         res.status(201).json({
             message: 'Utilisateur créé',
-            ...user,
+            user,
         })
     } catch (error: any) {
         res.status(400).json({error: error.message})
