@@ -10,6 +10,9 @@ declare global {
     }
 }
 
+/**
+ * Vérifie le token JWT et ajoute userId à la requête
+ */
 export const authenticateToken = (
     req: Request,
     res: Response,

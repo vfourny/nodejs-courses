@@ -5,8 +5,9 @@ import prisma from "@/client";
 
 export const authRouter = Router()
 
-// POST /auth/login
-// Accessible via POST /auth/login
+/**
+ * Authentifie un utilisateur et génère un token JWT
+ */
 authRouter.post('/login', async (req: Request, res: Response) => {
     const {email, password} = req.body
 

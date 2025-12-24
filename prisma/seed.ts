@@ -7,6 +7,18 @@ const adapter = new PrismaBetterSqlite3({
 })
 const prisma = new PrismaClient({adapter})
 
+/**
+ * Fonction principale de seed de la base de données
+ *
+ * Cette fonction :
+ * 1. Supprime tous les utilisateurs existants
+ * 2. Réinitialise la séquence d'auto-incrémentation SQLite
+ * 3. Crée 3 utilisateurs de test (Alice, Bob, John Doe)
+ * 4. Tous les utilisateurs utilisent le mot de passe "password123" (haché avec bcrypt)
+ *
+ * @async
+ * @throws {Error} Si une erreur survient pendant le seeding
+ */
 async function main() {
     await prisma.user.deleteMany()
     await prisma.$executeRaw`DELETE

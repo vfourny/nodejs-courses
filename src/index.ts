@@ -1,14 +1,37 @@
 import 'dotenv/config'
 import express from 'express'
-import {userRouter} from "@/user/user.route";
-import {authRouter} from "@/auth/auth.route";
+import {userRouter} from "@/routes/user.route";
+import {authRouter} from "@/routes/auth.route";
+import swaggerUi from 'swagger-ui-express'
+import {swaggerDocument} from './docs'
 
+/**
+ * Application Express principale
+ *
+ * Configure et exporte l'application Express avec :
+ * - Middleware JSON
+ * - Routes d'authentification (/auth)
+ * - Routes utilisateur (/users)
+ *
+ * @type {Express}
+ */
 export const app = express()
 
 const port = 3000
 
 // Middleware pour parser le JSON
 app.use(express.json())
+
+// Routes de l'API
+app.use('/auth', authRouter)
+app.use('/users', userRouter)
+
+// Documentation Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "API Documentation"
+}))
+
 
 // Route d'accueil
 app.get('/', (_req, res) => {
