@@ -4,27 +4,19 @@ import {userRouter} from "@/routes/user.route";
 import {authRouter} from "@/routes/auth.route";
 import swaggerUi from 'swagger-ui-express'
 import {swaggerDocument} from './docs'
+import * as http from "node:http";
+import {ChatServer} from "@/socket/Chat";
 
-/**
- * Application Express principale
- *
- * Configure et exporte l'application Express avec :
- * - Middleware JSON
- * - Routes d'authentification (/auth)
- * - Routes utilisateur (/users)
- *
- * @type {Express}
- */
-export const app = express()
+const app = express()
+const server = http.createServer(app);
+
+// Initialiser le serveur de chat avec la classe
+new ChatServer(server)
 
 const port = 3000
 
 // Middleware pour parser le JSON
 app.use(express.json())
-
-// Routes de l'API
-app.use('/auth', authRouter)
-app.use('/users', userRouter)
 
 // Documentation Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
@@ -33,17 +25,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
 }))
 
 
-// Route d'accueil
+// Route Express classique
 app.get('/', (_req, res) => {
-    res.status(200).send('Bienvenue sur le serveur HTTP')
+    res.send('Serveur Socket.IO actif')
 })
 
-// Utilisation du router utilisateur
-// Toutes les routes définies dans userRouter seront préfixées par /users
+// Autres middlewares et routes Express
 app.use('/users', userRouter)
 app.use('/auth', authRouter)
 
-// Démarrage du serveur
-app.listen(port, () => {
-    console.log(`Mon serveur démarre sur le port ${port}`)
+server.listen(port, () => {
+    console.log(`Serveur démarré sur http://localhost:${port}`)
 })
