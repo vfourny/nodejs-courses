@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Chat avec Authentification</title>
+    <title>Chat avec Rooms</title>
     <style>
         * {
             margin: 0;
@@ -31,6 +31,24 @@
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #ddd;
+        }
+
+        #roomButtons {
+            margin: 10px 0;
+        }
+
+        #roomButtons button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        #roomButtons button.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
         }
 
         #messages {
@@ -81,7 +99,7 @@
     </style>
 </head>
 <body>
-<h1>Chat Socket.IO avec Auth</h1>
+<h1>Chat avec Rooms</h1>
 
 <div id="loginForm">
     <input id="email" placeholder="Email" type="email"/>
@@ -92,7 +110,12 @@
 </div>
 
 <div class="hidden" id="chatContainer">
-    <p>Connecté : <strong id="currentUser"></strong></p>
+    <p>Connecté : <strong id="currentUser"></strong> | Room : <strong id="currentRoom">-</strong></p>
+    <div id="roomButtons">
+        <button data-room="general">General</button>
+        <button data-room="nodejs">Node.js</button>
+    </div>
+    <p id="usersList" style="font-size: 0.9em; color: #666;"></p>
     <div id="messages"></div>
     <form id="form">
         <input autocomplete="off" id="input" placeholder="Votre message..."/>
@@ -102,7 +125,7 @@
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
-    let socket, userEmail
+    let socket, userEmail, currentRoom = null
 
     document.getElementById('loginButton').addEventListener('click', async () => {
         const email = document.getElementById('email').value.trim()
@@ -156,13 +179,47 @@
         socket.on('user-joined', (msg) => addMessage(msg, true))
         socket.on('message', (data) => addMessage(`${data.username}: ${data.message}`))
 
+        socket.on('room-joined', (data) => {
+            currentRoom = data.room
+            document.getElementById('currentRoom').textContent = data.room
+            document.getElementById('usersList').textContent = `Utilisateurs: ${data.users.join(', ')}`
+            addMessage(`Vous avez rejoint #${data.room}`, true)
+            updateActiveButton(data.room)
+        })
+
+        socket.on('room-user-joined', (username) => {
+            addMessage(`${username} a rejoint`, true)
+        })
+
+        socket.on('room-user-left', (username) => {
+            addMessage(`${username} a quitté`, true)
+        })
+
+        socket.on('room-message', (data) => {
+            addMessage(`${data.username}: ${data.message}`)
+        })
+
+        document.querySelectorAll('#roomButtons button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const room = btn.dataset.room
+                if (currentRoom) socket.emit('leave-room', currentRoom)
+                socket.emit('join-room', room)
+            })
+        })
+
         form.addEventListener('submit', (e) => {
             e.preventDefault()
-            if (input.value) {
-                socket.emit('message', userEmail, input.value)
+            if (input.value && currentRoom) {
+                socket.emit('room-message', currentRoom, input.value)
                 input.value = ''
             }
         })
+
+        function updateActiveButton(room) {
+            document.querySelectorAll('#roomButtons button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.room === room)
+            })
+        }
     }
 </script>
 </body>
