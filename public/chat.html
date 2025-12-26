@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat avec Rooms</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #loginForm input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+
+        #roomButtons {
+            margin: 10px 0;
+        }
+
+        #roomButtons button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        #roomButtons button.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        #messages {
+            border: 1px solid #ddd;
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+
+        #messages div {
+            margin: 5px 0;
+            padding: 5px;
+        }
+
+        .system {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: red;
+        }
+
+        #form {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<h1>Chat avec Rooms</h1>
+
+<div id="loginForm">
+    <input id="email" placeholder="Email" type="email"/>
+    <input id="password" placeholder="Password" type="password"/>
+    <button id="loginButton">Se connecter</button>
+    <p class="error" id="loginError"></p>
+    <p><small>Comptes : alice@example.com/password123 ou bob@example.com/password123</small></p>
+</div>
+
+<div class="hidden" id="chatContainer">
+    <p>Connecté : <strong id="currentUser"></strong> | Room : <strong id="currentRoom">-</strong></p>
+    <div id="roomButtons">
+        <button data-room="general">General</button>
+        <button data-room="nodejs">Node.js</button>
+    </div>
+    <p id="usersList" style="font-size: 0.9em; color: #666;"></p>
+    <div id="messages"></div>
+    <form id="form">
+        <input autocomplete="off" id="input" placeholder="Votre message..."/>
+        <button>Envoyer</button>
+    </form>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    let socket, userEmail, currentRoom = null
+
+    document.getElementById('loginButton').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim()
+        const password = document.getElementById('password').value.trim()
+        const loginError = document.getElementById('loginError')
+        loginError.textContent = ''
+
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password})
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                loginError.textContent = error.error
+                return
+            }
+
+            const {token} = await response.json()
+            userEmail = email
+
+            document.getElementById('loginForm').classList.add('hidden')
+            document.getElementById('chatContainer').classList.remove('hidden')
+            document.getElementById('currentUser').textContent = userEmail
+
+            connectToChat(token)
+        } catch (error) {
+            loginError.textContent = 'Erreur réseau'
+        }
+    })
+
+    function connectToChat(token) {
+        socket = io('http://localhost:3000', {auth: {token}})
+        const messages = document.getElementById('messages')
+        const form = document.getElementById('form')
+        const input = document.getElementById('input')
+
+        socket.emit('user', userEmail)
+
+        function addMessage(text, isSystem = false) {
+            const div = document.createElement('div')
+            div.className = isSystem ? 'system' : ''
+            div.textContent = text
+            messages.appendChild(div)
+            messages.scrollTop = messages.scrollHeight
+        }
+
+        socket.on('welcome', (msg) => addMessage(msg, true))
+        socket.on('user-joined', (msg) => addMessage(msg, true))
+        socket.on('message', (data) => addMessage(`${data.username}: ${data.message}`))
+
+        socket.on('room-joined', (data) => {
+            currentRoom = data.room
+            document.getElementById('currentRoom').textContent = data.room
+            document.getElementById('usersList').textContent = `Utilisateurs: ${data.users.join(', ')}`
+            addMessage(`Vous avez rejoint #${data.room}`, true)
+            updateActiveButton(data.room)
+        })
+
+        socket.on('room-user-joined', (username) => {
+            addMessage(`${username} a rejoint`, true)
+        })
+
+        socket.on('room-user-left', (username) => {
+            addMessage(`${username} a quitté`, true)
+        })
+
+        socket.on('room-message', (data) => {
+            addMessage(`${data.username}: ${data.message}`)
+        })
+
+        document.querySelectorAll('#roomButtons button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const room = btn.dataset.room
+                if (currentRoom) socket.emit('leave-room', currentRoom)
+                socket.emit('join-room', room)
+            })
+        })
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault()
+            if (input.value && currentRoom) {
+                socket.emit('room-message', currentRoom, input.value)
+                input.value = ''
+            }
+        })
+
+        function updateActiveButton(room) {
+            document.querySelectorAll('#roomButtons button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.room === room)
+            })
+        }
+    }
+</script>
+</body>
+</html>
