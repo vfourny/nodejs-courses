@@ -18,12 +18,14 @@ const port = 3000
 // Middleware pour parser le JSON
 app.use(express.json())
 
+// Sert les fichiers statiques
+app.use(express.static('public'))
+
 // Documentation Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: "API Documentation"
 }))
-
 
 // Route Express classique
 app.get('/', (_req, res) => {
